@@ -477,6 +477,24 @@ func configureServiceObjects() {
 	if viper.IsSet("oauth2.gravatar_url") {
 		config.Setting.OAUTH2_SETTINGS.GravatarUrl = viper.GetString("oauth2.gravatar_url")
 	}
+
+	/*********** KEYCLOAK / OIDC GROUP MAPPING *******************/
+	if viper.IsSet("oauth2.group_claim_name") {
+		config.Setting.OAUTH2_SETTINGS.GroupClaimName = viper.GetString("oauth2.group_claim_name")
+	}
+	if viper.IsSet("oauth2.admin_group") {
+		config.Setting.OAUTH2_SETTINGS.AdminGroup = viper.GetString("oauth2.admin_group")
+	}
+	if viper.IsSet("oauth2.user_group") {
+		config.Setting.OAUTH2_SETTINGS.UserGroup = viper.GetString("oauth2.user_group")
+	}
+	if viper.IsSet("oauth2.extract_groups_from_token") {
+		config.Setting.OAUTH2_SETTINGS.ExtractGroupsFromToken = viper.GetBool("oauth2.extract_groups_from_token")
+	}
+	if viper.IsSet("oauth2.skipverify") {
+		config.Setting.OAUTH2_SETTINGS.SkipVerify = viper.GetBool("oauth2.skipverify")
+	}
+
 	/*********** DASHBOARD *******************/
 	if viper.IsSet("dashboard_settings.dashboard_home") {
 		config.Setting.DASHBOARD_SETTINGS.ExternalHomeDashboard = viper.GetString("dashboard_settings.dashboard_home")

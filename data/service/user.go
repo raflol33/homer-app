@@ -2,6 +2,7 @@ package service
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -376,8 +377,6 @@ func (us *UserService) GetAuthTypeList() ([]byte, error) {
 	return json.Marshal(oj)
 }
 
-// this method is used to login the user
-// it doesn't check internally whether all the validation are applied or not
 func (us *UserService) LoginUserUsingOauthToken(oAuth2Object model.OAuth2MapToken) (string, model.TableUser, error) {
 
 	userJsonData, _ := gabs.ParseJSON(oAuth2Object.ProfileJson)
@@ -388,14 +387,20 @@ func (us *UserService) LoginUserUsingOauthToken(oAuth2Object model.OAuth2MapToke
 
 	userData.UserGroup = "user"
 	userData.IsAdmin = false
+	userData.Enabled = true
+
 	if userJsonData.Exists("email") {
 		userData.Email = userJsonData.S("email").Data().(string)
 		userData.UserName = userData.Email
 		userData.Id = int(hashString(userData.UserName))
-		isAdmin, _ := us.IsAdmin(userData.Email)
-		if isAdmin {
-			userData.UserGroup = "admin"
-			userData.IsAdmin = true
+	}
+
+	// Keycloak returns preferred_username; use it if email is absent
+	if userJsonData.Exists("preferred_username") {
+		preferredUsername := userJsonData.S("preferred_username").Data().(string)
+		if userData.UserName == "" {
+			userData.UserName = preferredUsername
+			userData.Id = int(hashString(userData.UserName))
 		}
 	}
 
@@ -411,20 +416,99 @@ func (us *UserService) LoginUserUsingOauthToken(oAuth2Object model.OAuth2MapToke
 		userData.Avatar = userJsonData.S("picture").Data().(string)
 	}
 
+	// --- Group / role resolution (Keycloak OIDC) ---
+	groupClaimName := config.Setting.OAUTH2_SETTINGS.GroupClaimName
+	if groupClaimName == "" {
+		groupClaimName = "groups"
+	}
+
+	fmt.Println("====== OAUTH2 RBAC DEBUG: CONFIG VALUES ======")
+	fmt.Printf("  group_claim_name          = %q\n", groupClaimName)
+	fmt.Printf("  admin_group               = %q\n", config.Setting.OAUTH2_SETTINGS.AdminGroup)
+	fmt.Printf("  user_group                = %q\n", config.Setting.OAUTH2_SETTINGS.UserGroup)
+	fmt.Printf("  extract_groups_from_token = %v\n", config.Setting.OAUTH2_SETTINGS.ExtractGroupsFromToken)
+
+	fmt.Println("====== OAUTH2 RBAC DEBUG: CHECKING USERINFO PROFILE ======")
+	fmt.Printf("  claim %q exists (gabs.Exists) = %v\n", groupClaimName, userJsonData.Exists(groupClaimName))
+	pathNode := userJsonData.Path(groupClaimName)
+	if pathNode != nil && pathNode.Data() != nil {
+		fmt.Printf("  claim %q raw value (gabs.Path) = %v\n", groupClaimName, pathNode.Data())
+		fmt.Printf("  claim %q raw Go type           = %T\n", groupClaimName, pathNode.Data())
+	} else {
+		fmt.Printf("  claim %q NOT FOUND via gabs.Path()\n", groupClaimName)
+	}
+
+	groupsResolved := false
+
+	// 1. Try the userinfo profile response (returned by profile_url)
+	groups := extractGroupsFromContainer(userJsonData, groupClaimName)
+	fmt.Printf("  >> Tier 1 result: extracted groups = %v (count=%d)\n", groups, len(groups))
+	if len(groups) > 0 {
+		groupsResolved = mapGroupsToRole(&userData, groups)
+		fmt.Printf("  >> Tier 1 mapGroupsToRole returned = %v\n", groupsResolved)
+	}
+
+	// 2. Decode the ID token or access token JWT if configured
+	if !groupsResolved && config.Setting.OAUTH2_SETTINGS.ExtractGroupsFromToken {
+		fmt.Println("====== OAUTH2 RBAC DEBUG: CHECKING JWT TOKEN ======")
+		tokenToCheck := oAuth2Object.IDTokenRaw
+		tokenSource := "id_token"
+		if tokenToCheck == "" && oAuth2Object.Oauth2Token != nil {
+			tokenToCheck = oAuth2Object.Oauth2Token.AccessToken
+			tokenSource = "access_token"
+		}
+		if tokenToCheck == "" {
+			fmt.Println("  >> Tier 2: NO token available to decode")
+		} else {
+			fmt.Printf("  >> Tier 2: decoding %s (first 50 chars: %.50s...)\n", tokenSource, tokenToCheck)
+			groups = extractGroupsFromJWT(tokenToCheck, groupClaimName)
+			fmt.Printf("  >> Tier 2 result: extracted groups = %v (count=%d)\n", groups, len(groups))
+			if len(groups) > 0 {
+				groupsResolved = mapGroupsToRole(&userData, groups)
+				fmt.Printf("  >> Tier 2 mapGroupsToRole returned = %v\n", groupsResolved)
+			}
+		}
+	} else if !groupsResolved {
+		fmt.Println("  >> Tier 2 SKIPPED: extract_groups_from_token is false")
+	}
+
+	// 3. Fall back to database lookup by email
+	if !groupsResolved && userData.Email != "" {
+		fmt.Println("====== OAUTH2 RBAC DEBUG: DATABASE FALLBACK ======")
+		isAdmin, _ := us.IsAdmin(userData.Email)
+		if isAdmin {
+			userData.UserGroup = "admin"
+			userData.IsAdmin = true
+		}
+		fmt.Printf("  >> Tier 3: database lookup for email=%q -> isAdmin=%v\n", userData.Email, isAdmin)
+	}
+
+	fmt.Println("====== OAUTH2 RBAC DEBUG: FINAL RESULT ======")
+	fmt.Printf("  UserName  = %q\n", userData.UserName)
+	fmt.Printf("  UserGroup = %q\n", userData.UserGroup)
+	fmt.Printf("  IsAdmin   = %v\n", userData.IsAdmin)
+	fmt.Println("===============================================")
+
 	if config.Setting.OAUTH2_SETTINGS.EnableGravatar && userData.Email != "" {
 		hash := md5.Sum([]byte(userData.Email))
 		userData.Avatar = fmt.Sprintf(config.Setting.OAUTH2_SETTINGS.GravatarUrl, hex.EncodeToString(hash[:]))
 	}
 
 	if userJsonData.Exists("id") {
-
 		s := (userJsonData.S("id").Data().(string))
 		i, err := strconv.Atoi(s)
 		if err == nil {
 			userData.Id = i
 		} else {
 			logger.Error("bad ID size: ", s, i)
+		}
+	}
 
+	// Keycloak uses "sub" (UUID) instead of numeric "id"
+	if userJsonData.Exists("sub") && !userJsonData.Exists("id") {
+		if userData.Id == 0 {
+			sub := userJsonData.S("sub").Data().(string)
+			userData.Id = int(hashString(sub))
 		}
 	}
 
@@ -434,6 +518,114 @@ func (us *UserService) LoginUserUsingOauthToken(oAuth2Object model.OAuth2MapToke
 
 	token, err := auth.Token(userData)
 	return token, userData, err
+}
+
+// extractGroupsFromContainer reads a string array from a gabs container using
+// a dotted path (e.g. "groups" or "realm_access.roles").
+func extractGroupsFromContainer(container *gabs.Container, claimPath string) []string {
+	node := container.Path(claimPath)
+	if node == nil || node.Data() == nil {
+		return nil
+	}
+	children := node.Children()
+	if len(children) == 0 {
+		if s, ok := node.Data().(string); ok {
+			return []string{s}
+		}
+		return nil
+	}
+	var groups []string
+	for _, child := range children {
+		if g, ok := child.Data().(string); ok {
+			groups = append(groups, g)
+		}
+	}
+	return groups
+}
+
+// extractGroupsFromJWT base64-decodes a JWT payload (no signature verification
+// -- the token was already validated during the OAuth2 exchange) and pulls
+// the groups array from the claims.
+func extractGroupsFromJWT(tokenString, claimPath string) []string {
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		logger.Error("extractGroupsFromJWT: base64 decode failed: ", err.Error())
+		return nil
+	}
+	container, err := gabs.ParseJSON(payload)
+	if err != nil {
+		logger.Error("extractGroupsFromJWT: JSON parse failed: ", err.Error())
+		return nil
+	}
+	return extractGroupsFromContainer(container, claimPath)
+}
+
+// groupMatches handles Keycloak path-based groups (e.g. "/homer-admin")
+// as well as simple group names ("admin").
+func groupMatches(keycloakGroup, configuredGroup string) bool {
+	kg := strings.ToLower(strings.TrimSpace(keycloakGroup))
+	cg := strings.ToLower(strings.TrimSpace(configuredGroup))
+
+	if kg == cg {
+		return true
+	}
+
+	kgTrimmed := strings.Trim(kg, "/")
+	cgTrimmed := strings.Trim(cg, "/")
+
+	if kgTrimmed == cgTrimmed {
+		return true
+	}
+
+	// "/parent/homer-admin" should match "homer-admin"
+	if idx := strings.LastIndex(kgTrimmed, "/"); idx >= 0 {
+		if kgTrimmed[idx+1:] == cgTrimmed {
+			return true
+		}
+	}
+	return false
+}
+
+// mapGroupsToRole checks the supplied groups against the configured admin and
+// user group names and sets the corresponding role on userData.
+func mapGroupsToRole(userData *model.TableUser, groups []string) bool {
+	adminGroup := config.Setting.OAUTH2_SETTINGS.AdminGroup
+	userGroup := config.Setting.OAUTH2_SETTINGS.UserGroup
+	if adminGroup == "" {
+		adminGroup = "admin"
+	}
+	if userGroup == "" {
+		userGroup = "user"
+	}
+
+	fmt.Printf("  mapGroupsToRole: checking %d groups against admin=%q user=%q\n", len(groups), adminGroup, userGroup)
+
+	for _, g := range groups {
+		match := groupMatches(g, adminGroup)
+		fmt.Printf("    groupMatches(%q, adminGroup=%q) -> %v\n", g, adminGroup, match)
+		if match {
+			userData.IsAdmin = true
+			userData.UserGroup = "admin"
+			return true
+		}
+	}
+
+	for _, g := range groups {
+		match := groupMatches(g, userGroup)
+		fmt.Printf("    groupMatches(%q, userGroup=%q) -> %v\n", g, userGroup, match)
+		if match {
+			userData.IsAdmin = false
+			userData.UserGroup = "user"
+			return true
+		}
+	}
+
+	fmt.Printf("  mapGroupsToRole: NO MATCH for any group in %v\n", groups)
+	return false
 }
 
 // this method gets all users from database

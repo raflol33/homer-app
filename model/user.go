@@ -144,6 +144,7 @@ type OAuth2MapToken struct {
 	ExpireDate  time.Time       `json:"expire_date"`
 	Oauth2Token *oauth2.Token   `json:"-"`
 	ProfileJson json.RawMessage `json:"profile_json"`
+	IDTokenRaw  string          `json:"id_token_raw"`
 }
 
 //swagger:model AuthTypeList

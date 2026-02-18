@@ -3,6 +3,7 @@ package controllerv1
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -500,6 +501,18 @@ func (uc *UserController) AuthSericeRequest(c echo.Context) error {
 	options := []oauth2.AuthCodeOption{}
 	redirecturi := config.Setting.OAUTH2_SETTINGS.RedirectUri + "/" + config.Setting.OAUTH2_SETTINGS.ServiceProviderName
 
+	// Build a context that all OAuth2 HTTP calls share.
+	// When SkipVerify is true, inject an http.Client that ignores x509 errors
+	// (self-signed / private-CA certificates on the Keycloak side).
+	oauth2Ctx := context.Background()
+	if config.Setting.OAUTH2_SETTINGS.SkipVerify {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		oauth2Ctx = context.WithValue(oauth2Ctx, oauth2.HTTPClient, &http.Client{Transport: tr})
+		logger.Debug("AuthSericeRequest: TLS verification disabled for OAuth2 provider")
+	}
+
 	if config.Setting.OAUTH2_SETTINGS.AuthStyle == 1 {
 		options = append(options,
 			oauth2.SetAuthURLParam("grant_type", config.Setting.OAUTH2_SETTINGS.GrantType),
@@ -515,16 +528,16 @@ func (uc *UserController) AuthSericeRequest(c echo.Context) error {
 
 	logger.Debug("Options for token exchange in AuthSericeRequest : ", options)
 
-	token, err := config.Setting.MAIN_SETTINGS.OAuth2Config.Exchange(context.Background(), code, options...)
+	token, err := config.Setting.MAIN_SETTINGS.OAuth2Config.Exchange(oauth2Ctx, code, options...)
 	if err != nil {
 		logger.Error("AuthSericeRequest OAuth2Config Exchange is invalid:", err.Error())
 		return httpresponse.CreateBadResponse(&c, http.StatusInternalServerError, err.Error())
 	}
 
 	//scope := c.QueryParam("scope")
-	tokenSource := config.Setting.MAIN_SETTINGS.OAuth2Config.TokenSource(context.Background(), token)
+	tokenSource := config.Setting.MAIN_SETTINGS.OAuth2Config.TokenSource(oauth2Ctx, token)
 
-	client := oauth2.NewClient(context.Background(), tokenSource)
+	client := oauth2.NewClient(oauth2Ctx, tokenSource)
 
 	if config.Setting.OAUTH2_SETTINGS.Method == "POST" {
 		resp, err := client.Post(config.Setting.OAUTH2_SETTINGS.ProfileURL, "application/x-www-form-urlencoded", bytes.NewReader([]byte("")))
@@ -570,8 +583,18 @@ func (uc *UserController) AuthSericeRequest(c echo.Context) error {
 
 	}
 
+	fmt.Println("====== OAUTH2 DEBUG: RAW PROFILE JSON FROM KEYCLOAK USERINFO ======")
+	fmt.Println(string(oAuth2Object.ProfileJson))
+	fmt.Println("==================================================================")
+
 	ssoToken := heputils.GenerateToken()
 	oAuth2Object.Oauth2Token = token
+	if idToken, ok := token.Extra("id_token").(string); ok {
+		oAuth2Object.IDTokenRaw = idToken
+		fmt.Println("====== OAUTH2 DEBUG: ID TOKEN IS PRESENT IN RESPONSE ======")
+	} else {
+		fmt.Println("====== OAUTH2 DEBUG: NO id_token IN TOKEN RESPONSE ======")
+	}
 	oAuth2Object.CreateDate = time.Now()
 	oAuth2Object.ExpireDate = time.Now().Add(time.Duration(config.Setting.OAUTH2_SETTINGS.ExpireSSOToken) * time.Minute)
 	logger.Debug("AuthSericeRequest GenerateToken: ", ssoToken)

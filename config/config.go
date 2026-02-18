@@ -60,31 +60,36 @@ type HomerSettingServer struct {
 	}
 
 	OAUTH2_SETTINGS struct {
-		Enable               bool     `default:"false"`
-		ClientID             string   `default:"1234565"`
-		ClientSecret         string   `default:"FAKE"`
-		ProjectID            string   `default:"Homer Oauth2"`
-		AuthUri              string   `default:"https://accounts.google.com/o/oauth2/auth"`
-		TokenUri             string   `default:"https://oauth2.googleapis.com/token"`
-		AuthProviderCert     string   `default:"https://www.googleapis.com/oauth2/v1/certs"`
-		RedirectUri          string   `default:"http://localhost:80/api/v3/oauth2/auth"`
-		ProfileURL           string   `default:"https://www.googleapis.com/oauth2/v1/userinfo"`
-		Method               string   `default:"GET"`
-		ResponseType         string   `default:"code"`
-		GrantType            string   `default:"authorization_code"`
-		UsePkce              bool     `default:"true"`
-		UserToken            string   `default:"randommin43characterstringisneededasusertoken"`
-		ServiceProviderName  string   `default:"google"`
-		ServiceProviderImage string   `default:""`
-		StateValue           string   `default:"jkwh027yasj"`
-		UrlToServiceRedirect string   `default:"/api/v3/oauth2/redirect"`
-		UrlToService         string   `default:"/"`
-		Scope                []string `default:"[email,openid,profile]"`
-		EnableGravatar       bool     `default:"false"`
-		EnableAutoRedirect   bool     `default:"false"`
-		AuthStyle            int      `default:"0"`
-		GravatarUrl          string   `default:"https://www.gravatar.com/avatar/%s.jpg"`
-		ExpireSSOToken       uint32   `default:"5"`
+		Enable                 bool     `default:"false"`
+		ClientID               string   `default:"1234565"`
+		ClientSecret           string   `default:"FAKE"`
+		ProjectID              string   `default:"Homer Oauth2"`
+		AuthUri                string   `default:"https://accounts.google.com/o/oauth2/auth"`
+		TokenUri               string   `default:"https://oauth2.googleapis.com/token"`
+		AuthProviderCert       string   `default:"https://www.googleapis.com/oauth2/v1/certs"`
+		RedirectUri            string   `default:"http://localhost:80/api/v3/oauth2/auth"`
+		ProfileURL             string   `default:"https://www.googleapis.com/oauth2/v1/userinfo"`
+		Method                 string   `default:"GET"`
+		ResponseType           string   `default:"code"`
+		GrantType              string   `default:"authorization_code"`
+		UsePkce                bool     `default:"true"`
+		UserToken              string   `default:"randommin43characterstringisneededasusertoken"`
+		ServiceProviderName    string   `default:"google"`
+		ServiceProviderImage   string   `default:""`
+		StateValue             string   `default:"jkwh027yasj"`
+		UrlToServiceRedirect   string   `default:"/api/v3/oauth2/redirect"`
+		UrlToService           string   `default:"/"`
+		Scope                  []string `default:"[email,openid,profile]"`
+		EnableGravatar         bool     `default:"false"`
+		EnableAutoRedirect     bool     `default:"false"`
+		AuthStyle              int      `default:"0"`
+		GravatarUrl            string   `default:"https://www.gravatar.com/avatar/%s.jpg"`
+		ExpireSSOToken         uint32   `default:"5"`
+		GroupClaimName         string   `default:"groups"`
+		AdminGroup             string   `default:"admin"`
+		UserGroup              string   `default:"user"`
+		ExtractGroupsFromToken bool     `default:"false"`
+		SkipVerify             bool     `default:"false"`
 	}
 
 	LOG_SETTINGS struct {
