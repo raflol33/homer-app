@@ -353,6 +353,9 @@ func (us *UserService) GetAuthTypeList() ([]byte, error) {
 		replyOauth.Set("oauth2", "type")
 		replyOauth.Set(3, "position")
 		replyOauth.Set(true, "enable")
+		if config.Setting.OAUTH2_SETTINGS.LogoutRedirectURI != "" {
+			replyOauth.Set(config.Setting.MAIN_SETTINGS.APIPrefix+"/api/v3/auth/logout", "logout_url")
+		}
 		replyFinal.ArrayAppend(replyOauth.Data(), "oauth2")
 	}
 

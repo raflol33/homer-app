@@ -90,6 +90,7 @@ type HomerSettingServer struct {
 		UserGroup              string   `default:"user"`
 		ExtractGroupsFromToken bool     `default:"false"`
 		SkipVerify             bool     `default:"false"`
+		LogoutRedirectURI      string   `default:""`
 	}
 
 	LOG_SETTINGS struct {

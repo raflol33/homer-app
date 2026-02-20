@@ -47,6 +47,9 @@ func RouteUserApis(acc *echo.Group, session *gorm.DB, ldapClient *ldap.LDAPClien
 	// user login
 	acc.POST("/auth", urc.LoginUser)
 
+	// user logout (redirects to Keycloak/OIDC logout if configured)
+	acc.GET("/auth/logout", urc.LogoutUser)
+
 	//list of auths
 	acc.GET("/auth/type/list", urc.GetAuthTypeList)
 

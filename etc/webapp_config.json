@@ -193,6 +193,7 @@
         "user_group": "homer-user",
         "extract_groups_from_token": true,
         "skipverify": true,
+        "logout_redirect_uri": "https://keycloakf5.ci29496794.cloud.alfaintra.net/realms/IPN/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2F10.226.109.13%3A8443%2F&client_id=homer",
         "gravatar": false,
         "gravatar_url": "https://www.gravatar.com/avatar/%s.jpg",
         "provider_image": ""

@@ -494,6 +494,9 @@ func configureServiceObjects() {
 	if viper.IsSet("oauth2.skipverify") {
 		config.Setting.OAUTH2_SETTINGS.SkipVerify = viper.GetBool("oauth2.skipverify")
 	}
+	if viper.IsSet("oauth2.logout_redirect_uri") {
+		config.Setting.OAUTH2_SETTINGS.LogoutRedirectURI = viper.GetString("oauth2.logout_redirect_uri")
+	}
 
 	/*********** DASHBOARD *******************/
 	if viper.IsSet("dashboard_settings.dashboard_home") {
@@ -806,7 +809,18 @@ func configureAsHTTPServer() {
 	}
 
 	/* static */
-	e.Use(middleware.Static(config.Setting.MAIN_SETTINGS.RootPath))
+	needsLogoutInjection := config.Setting.OAUTH2_SETTINGS.Enable &&
+		config.Setting.OAUTH2_SETTINGS.LogoutRedirectURI != ""
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root: config.Setting.MAIN_SETTINGS.RootPath,
+		Skipper: func(c echo.Context) bool {
+			if needsLogoutInjection {
+				p := c.Request().URL.Path
+				return p == "/" || p == "" || p == "/index.html"
+			}
+			return false
+		},
+	}))
 
 	/* enable guzip*/
 	if gzipEnable := viper.GetBool("http_settings.gzip"); gzipEnable {
@@ -1765,6 +1779,14 @@ func registerGetRedirect(e *echo.Echo, path string) {
 		prefix = viper.GetString("http_settings.api_prefix")
 	}
 
+	e.GET("/", func(c echo.Context) error {
+		return sendIndexHtml(c, path)
+	})
+
+	e.GET("/index.html", func(c echo.Context) error {
+		return sendIndexHtml(c, path)
+	})
+
 	e.GET(prefix+"/dashboard/:name", func(c echo.Context) (err error) {
 		return sendIndexHtml(c, path)
 	})
@@ -1817,29 +1839,137 @@ func registerGetRedirect(e *echo.Echo, path string) {
 
 func sendIndexHtml(c echo.Context, path string) error {
 
-	//RelativePath
+	needsInjection := config.Setting.OAUTH2_SETTINGS.Enable &&
+		config.Setting.OAUTH2_SETTINGS.LogoutRedirectURI != ""
+
+	relativePath := "/"
 	if viper.IsSet("http_settings.path") {
+		relativePath = viper.GetString("http_settings.path")
+	}
 
-		relativePath := viper.GetString("http_settings.path")
+	needsBaseHref := relativePath != "/"
 
-		//if it's standard / - we should do nothing
-		if relativePath == "/" {
-			return c.File(path + "/index.html")
-		}
-
-		content, err := os.ReadFile(path + "/index.html")
-		if err != nil {
-			logger.Debug("not found....", err.Error())
-			return c.String(http.StatusNotFound, "Not found")
-		}
-
-		newBody := strings.ReplaceAll(string(content), "window['base-href'] = '/';", "window['base-href'] = '"+relativePath+"/';")
-		return c.HTML(http.StatusOK, newBody)
-
-	} else {
+	if !needsInjection && !needsBaseHref {
 		return c.File(path + "/index.html")
 	}
 
+	content, err := os.ReadFile(path + "/index.html")
+	if err != nil {
+		logger.Debug("not found....", err.Error())
+		return c.String(http.StatusNotFound, "Not found")
+	}
+	body := string(content)
+
+	if needsBaseHref {
+		body = strings.ReplaceAll(body, "window['base-href'] = '/';", "window['base-href'] = '"+relativePath+"/';")
+	}
+
+	if needsInjection {
+		logoutEndpoint := config.Setting.MAIN_SETTINGS.APIPrefix + "/api/v3/auth/logout"
+		providerLabel := config.Setting.OAUTH2_SETTINGS.ServiceProviderName
+		if providerLabel != "" {
+			providerLabel = strings.ToUpper(providerLabel[:1]) + providerLabel[1:]
+		} else {
+			providerLabel = "SSO"
+		}
+		btnLabel := providerLabel
+
+		cssBlock := `<style>` +
+			`.homer-kc-btn{` +
+			`display:block!important;width:100%!important;max-width:300px!important;` +
+			`margin:12px auto!important;padding:0!important;` +
+			`background-color:#1976d2!important;color:#fff!important;` +
+			`border:none!important;border-radius:4px!important;` +
+			`font-size:14px!important;font-weight:500!important;` +
+			`font-family:Roboto,"Helvetica Neue",sans-serif!important;` +
+			`letter-spacing:.5px!important;text-align:center!important;` +
+			`cursor:pointer!important;` +
+			`height:36px!important;min-height:36px!important;line-height:36px!important;` +
+			`min-width:0!important;max-height:none!important;` +
+			`overflow:visible!important;box-sizing:border-box!important;` +
+			`white-space:nowrap!important;` +
+			`transition:background-color .2s ease!important;` +
+			`}` +
+			`.homer-kc-btn:hover{background-color:#1565c0!important;}` +
+			`</style>`
+
+		logoutScript := `(function(){` +
+			`console.log("Homer Logout Interceptor: Active");` +
+			`var _redirect=function(){` +
+			`console.log("Logout detected! Forcing Keycloak redirect...");` +
+			`window.location.replace("` + logoutEndpoint + `");` +
+			`};` +
+			`var _ri=Storage.prototype.removeItem;` +
+			`Storage.prototype.removeItem=function(k){` +
+			`if(k==="HOMER-currentUser"){` +
+			`var v=this.getItem(k);` +
+			`_ri.call(this,k);` +
+			`if(v){_redirect();}` +
+			`}else{_ri.call(this,k);}` +
+			`};` +
+			`var _cl=Storage.prototype.clear;` +
+			`Storage.prototype.clear=function(){` +
+			`var v=this.getItem("HOMER-currentUser");` +
+			`_cl.call(this);` +
+			`if(v){_redirect();}` +
+			`};` +
+			`})();`
+
+		btnScript := `(function(){` +
+			`var L="` + btnLabel + `";` +
+			`var t=null;` +
+			`function fix(btn){` +
+			`btn.dataset.kcPatched="1";` +
+			`btn.removeAttribute("mat-icon-button");` +
+			`btn.classList.remove("mat-icon-button","mat-button-base","mat-focus-indicator");` +
+			`btn.className="homer-kc-btn";btn.textContent=L;` +
+			`var p=btn.parentElement;` +
+			`if(p){p.style.cssText+=";overflow:visible!important;height:auto!important;display:block!important";}` +
+			`var gp=p?p.parentElement:null;` +
+			`if(gp){gp.style.cssText+=";overflow:visible!important";}` +
+			`}` +
+			`function patch(){` +
+			`var fa=document.querySelectorAll("fa-icon");` +
+			`for(var i=0;i<fa.length;i++){` +
+			`var el=fa[i],svg=el.querySelector("svg"),` +
+			`btn=el.closest("button,a,[role=button]");` +
+			`if(!btn||btn.dataset.kcPatched)continue;` +
+			`var bad=!svg||!svg.querySelector("path");` +
+			`if(svg){var d=svg.getAttribute("data-icon");` +
+			`if(d==="keycloak"||d==="openid")bad=true;}` +
+			`if(!bad)continue;` +
+			`fix(btn);` +
+			`}` +
+			`var imgs=document.querySelectorAll("button img,[mat-icon-button] img");` +
+			`for(var j=0;j<imgs.length;j++){` +
+			`var img=imgs[j],b=img.closest("button,[mat-icon-button]");` +
+			`if(!b||b.dataset.kcPatched)continue;` +
+			`var s=img.getAttribute("src");` +
+			`if(!s||s===""||img.complete&&img.naturalWidth===0){` +
+			`fix(b);` +
+			`}}` +
+			`}` +
+			`function sched(){if(t)return;t=setTimeout(function(){t=null;patch();},200);}` +
+			`if(document.body){patch();` +
+			`new MutationObserver(sched).observe(document.body,{childList:true,subtree:true});}` +
+			`else{document.addEventListener("DOMContentLoaded",function(){patch();` +
+			`new MutationObserver(sched).observe(document.body,{childList:true,subtree:true});});}` +
+			`})();`
+
+		injection := cssBlock + "\n<script>" + logoutScript + btnScript + "</script>"
+		injected := false
+		if idx := strings.Index(body, "</head>"); idx >= 0 {
+			body = body[:idx] + injection + "\n" + body[idx:]
+			injected = true
+		}
+		if !injected {
+			if idx := strings.Index(body, "</HEAD>"); idx >= 0 {
+				body = body[:idx] + injection + "\n" + body[idx:]
+			}
+		}
+	}
+
+	return c.HTML(http.StatusOK, body)
 }
 
 // middle ware handler

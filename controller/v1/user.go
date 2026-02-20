@@ -357,6 +357,15 @@ func (uc *UserController) LoginUser(c echo.Context) error {
 	return httpresponse.CreateSuccessResponseWithJson(&c, http.StatusCreated, response)
 }
 
+func (uc *UserController) LogoutUser(c echo.Context) error {
+	logoutURI := config.Setting.OAUTH2_SETTINGS.LogoutRedirectURI
+	if config.Setting.OAUTH2_SETTINGS.Enable && logoutURI != "" {
+		fmt.Println("OAUTH2 Logout: Redirecting to Keycloak")
+		return c.Redirect(http.StatusTemporaryRedirect, logoutURI)
+	}
+	return httpresponse.CreateSuccessResponse(&c, http.StatusOK, `{"data":"ok","message":"logged out"}`)
+}
+
 // swagger:route GET /auth/type/list user GetAuthTypeList
 //
 // Returns data from server
