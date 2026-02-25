@@ -1,0 +1,25 @@
+$delete: red;
+$reset: orange;
+
+.alarm-delete {
+    font-size: 54pt;
+    color: $delete;
+    height: 71px;
+    width: 71px;
+}
+.alarm-reset {
+    font-size: 54pt;
+    color: $reset;
+    height: 71px;
+    width: 71px;
+}
+
+
+.reset {
+    background: $reset;
+    color:white;
+}
+.delete{
+    background: $delete;
+    color:white;
+}

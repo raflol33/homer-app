@@ -1,0 +1,10 @@
+<div mat-dialog-content style="text-align: center">
+  <fa-icon class="alarm" icon="exclamation-triangle"></fa-icon>
+  <h1 mat-dialog-title>{{'dashboard.deleteDialog.title' | translate}}</h1>
+  <p>{{'dashboard.deleteDialog.warning' | translate}}</p>
+</div>
+
+<div mat-dialog-actions style="display: flex; margin-bottom: 0; justify-content: space-between;">
+  <button mat-raised-button (click)="onNoClick()">{{'LINK.buttons.cancel' | translate}}</button>
+  <button mat-raised-button color="accent" [mat-dialog-close]="true" cdkFocusInitial>{{'dashboard.deleteDialog.confirmation' | translate}}</button>
+</div>

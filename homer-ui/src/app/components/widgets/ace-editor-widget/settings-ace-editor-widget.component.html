@@ -1,0 +1,38 @@
+<mat-toolbar class="title" color="primary">
+  <div>{{'LINK.settings' | translate}}</div>
+  <button mat-icon-button (click)="onNoClick()">
+    <fa-icon icon="times"></fa-icon>
+  </button>
+</mat-toolbar>
+<div mat-dialog-content>
+  <mat-form-field>
+    <mat-label>{{'LINK.title' | translate}}</mat-label>
+    <input matInput [(ngModel)]="data.title" (ngModelChange)='validate($event)'>
+  </mat-form-field>
+</div>
+<div mat-dialog-content>
+  <mat-form-field>
+    <mat-label>{{ 'widgets.aceEditor.settings.theme' | translate }}</mat-label>
+    <mat-select [(value)]="data.theme" >
+      <mat-option *ngFor="let theme of themeList | keyvalue" [value]="theme.value">
+        {{theme.key}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<ace-editor #editor
+  [theme]="data.theme"
+  [(text)]="data.text"
+  [mode]="'markdown'"
+  [readOnly]="false"
+  [autoUpdateContent]="true"
+  (textChanged)="scriptValidate()"
+  [durationBeforeCallback]="200"
+  style="min-height: 300px; width:100%; overflow: auto;"
+></ace-editor>
+
+<div mat-dialog-actions style="float: right; margin-bottom: 0rem;">
+  <button mat-raised-button (click)="onNoClick()">{{'LINK.buttons.cancel' | translate}}</button>
+  <button mat-raised-button class="setting-btn-ok" [mat-dialog-close]="data" cdkFocusInitial [disabled]='isInvalid'>{{'LINK.buttons.save' | translate}}</button>
+</div>

@@ -1,0 +1,83 @@
+<div class="reset-wrapper">
+    <div class="setting-button-container">
+    </div>
+    <div class="tab-name">
+       <h3>{{ page | titlecase }}</h3>
+    </div>
+    <hr />
+    <div class="page-reset">
+        <!-- content page -->
+        <mat-card appearance="outlined" class="reset-card">
+            <mat-card-header class="reset-header">
+            
+              
+                <mat-card-title>
+                    <div class="icon-header">
+                       <fa-icon class="main-icon" icon="database"></fa-icon>
+                    </div>
+                    {{'LINK.localStorage' | translate}}</mat-card-title>
+                <mat-card-subtitle>{{'preference.pageReset.localStorageSetting' | translate }}</mat-card-subtitle>
+            </mat-card-header>
+            <div class="setting-button-container">
+                <span style='display: flex;' class='in-widget'>
+                    <button mat-raised-button class="setting-btn"
+                        (click)="onClearLocalData(false)">{{'preference.pageReset.clearUserLocalData' | translate }}
+                    </button>
+            <button mat-raised-button class="setting-select" color="primary">
+                <button class="function-menu-trigger" mat-button [matMenuTriggerFor]="reset">
+                    <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false">
+                        <path d="M7 10l5 5 5-5z"></path>
+                    </svg>
+                </button>
+                <mat-menu #reset="matMenu">
+                    <div class="function-menu-wrapper" style="padding: 0;">
+                        <button mat-raised-button class="setting-btn in-select"
+                                    (click)="onClearLocalData(true)">{{'preference.pageReset.clearAllLocalData' | translate
+                                    }}</button>
+                            </div>
+                        </mat-menu>
+            
+                    </button>
+                </span>
+            </div>
+        </mat-card>
+        <mat-card appearance="outlined" class="reset-card" *ngIf="isResetDashboard">
+            <mat-card-header class="flex-between">
+                <mat-card-title>
+                    <div class="icon-header">
+                        <fa-icon class="main-icon" icon="columns"></fa-icon>
+                     </div>
+                    {{'LINK.dashboard' | translate}}</mat-card-title>
+                <mat-card-subtitle>{{'preference.pageReset.dashboardSettings' | translate }}</mat-card-subtitle>
+
+            </mat-card-header>
+            <mat-card-body>
+                <div class="setting-button-container">
+                    <button mat-button class="setting-btn" style="float: right"
+                        (click)="onResetDashboard()">
+                        {{'preference.pageReset.resetDashboard' | translate }}
+                    </button>
+                </div>
+            </mat-card-body>
+        </mat-card>
+        <mat-card appearance="outlined" class="reset-card" *ngIf="isResetMapping && isAdmin">
+            <mat-card-header class="flex-between">
+               
+                <mat-card-title>
+                    <div class="icon-header">
+                        <fa-icon class="main-icon" icon="th-list" style="font-size:40px"></fa-icon>
+                     </div>
+                    {{'preference.pageReset.mappings' | translate }}</mat-card-title>
+                <mat-card-subtitle>{{'preference.pageReset.resetMappings' | translate }}</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-body>
+                <div class="setting-button-container">
+                    <button mat-button class="setting-btn" style="float: right" (click)="onResetMappings()">
+                        {{'preference.pageReset.resetMapping' | translate }}
+                    </button>
+                </div>
+            </mat-card-body>
+        </mat-card>
+    </div>
+</div>

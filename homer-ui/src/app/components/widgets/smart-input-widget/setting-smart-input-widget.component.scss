@@ -1,0 +1,35 @@
+.chack-list {
+  margin-right: 1.3rem;
+}
+
+.title {
+  width: initial !important;
+  display: flex;
+  justify-content: space-between;
+}
+
+.field-row-collection {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+}
+
+.c-box {
+  flex: 0;
+  min-width: 0rem;
+  margin: 1rem;
+}
+
+.example-container {
+  display: flex;
+  flex-direction: column;
+
+  &>* {
+    width: 100%;
+  }
+}
+
+.float-right {
+  position: absolute;
+  right: -2rem;
+}

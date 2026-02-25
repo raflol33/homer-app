@@ -1,0 +1,48 @@
+<div style="display: flex; height: calc(100vh - 45px)">
+    <!-- menu -->
+    <div class="nav-list">
+        <h3 class="menu-title">{{ this.isAdmin ? "Admin" : "User" }} Settings</h3>
+        <mat-nav-list>
+            <a mat-list-item *ngFor="let link of links" routerLinkActive="activated" class="menu-link"
+                id="{{link}}-setting" (click)="preferenceGo(link)">
+                {{ i18n(link) | uppercase }}
+            </a>
+        </mat-nav-list>
+    </div>
+    <!-- Pages -->
+    <ng-container [ngSwitch]="pageId">
+        
+        <app-page-profile
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"profile"'></app-page-profile>
+        <app-page-about
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"about"'></app-page-about>
+        <app-page-users
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"users"'></app-page-users>
+        <app-page-user-settings
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"user settings"'></app-page-user-settings>
+        <app-page-alias
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"alias"'></app-page-alias>
+        <app-page-ipalias
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"ip alias"'></app-page-ipalias>
+        <app-page-advanced-settings
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"advanced"'></app-page-advanced-settings>
+        <app-page-mapping
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"mapping"'></app-page-mapping>
+        <app-page-hepsub
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"hepsub"'></app-page-hepsub>
+        <app-page-api-auth
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"auth token"'></app-page-api-auth>
+        <app-page-scripts
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"scripts"'></app-page-scripts>
+        <app-page-agent-subscriptions
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"agentsub"'></app-page-agent-subscriptions>
+        <app-page-system-overview
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"system overview"'></app-page-system-overview>
+        <app-page-reset
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"reset"'></app-page-reset>
+        <app-page-admin
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"admin"'></app-page-admin>
+        <app-page-api-doc 
+            [pageID]="pageId" [page]="i18n(pageId)" class="other-pages-wrapper" *ngSwitchCase='"api documentation"'></app-page-api-doc>
+    </ng-container>
+</div>

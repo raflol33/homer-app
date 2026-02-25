@@ -1,0 +1,39 @@
+<mat-toolbar class="title" color="primary">
+	<div>{{'LINK.settings' | translate}}</div>
+	<button mat-icon-button (click)="onNoClick()">
+		<fa-icon icon="times"></fa-icon>
+	</button>
+</mat-toolbar>
+
+<div mat-dialog-content>
+	<div class="example-container">
+		<mat-form-field>
+			<mat-label>{{'LINK.title' | translate}}</mat-label>
+			<input matInput [(ngModel)]="data.title" (ngModelChange)='validate($event)'>
+		</mat-form-field>
+	</div>
+
+	<div class="example-container">
+		<mat-form-field>
+			<mat-label>{{ 'widgets.iframe.settings.link' | translate }}</mat-label>
+			<input matInput [(ngModel)]="data.url">
+		</mat-form-field>
+	</div>
+
+	<div class="example-container">
+		<mat-form-field>
+			<mat-label>{{ 'widgets.iframe.settings.description' | translate }}</mat-label>
+			<input matInput [(ngModel)]="data.desc">
+		</mat-form-field>
+	</div>
+
+	<div class="example-container">
+		<mat-checkbox color="primary" [(ngModel)]="data.refresh" name="refeshWidget">{{ 'widgets.iframe.settings.refresh' | translate }}</mat-checkbox>
+	</div>
+
+</div>
+
+<div mat-dialog-actions style="float: right; margin-bottom: 0rem;">
+	<button mat-raised-button (click)="onNoClick()">{{'LINK.buttons.cancel' | translate}}</button>
+	<button mat-raised-button class="setting-btn-ok" [mat-dialog-close]="data" cdkFocusInitial [disabled]='isInvalid'>{{'LINK.buttons.save' | translate}}</button>
+</div>

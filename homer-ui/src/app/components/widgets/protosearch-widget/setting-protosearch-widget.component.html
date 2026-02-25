@@ -1,0 +1,46 @@
+<mat-toolbar class="title" color="primary">
+  <div>{{'LINK.settings' | translate}}</div>
+  <button mat-icon-button (click)="onNoClick()">
+    <fa-icon icon="times"></fa-icon>
+  </button>
+</mat-toolbar>
+
+<div mat-dialog-content>
+  <div class="example-container-setting">
+    <mat-form-field>
+      <mat-label>{{ 'widgets.protosearch.settings.title' | translate }}</mat-label>
+      <input matInput [(ngModel)]="resultConfig.title" (keydown)="onChange()" (ngModelChange)='validateTitle($event)'>
+    </mat-form-field>
+
+    <mat-checkbox [(ngModel)]="resultConfig.isButton" color="primary" labelPosition="before" (click)="onChange()" [checked]="true" >Search Button</mat-checkbox>
+    <mat-form-field>
+      <mat-label>{{ 'widgets.protosearch.settings.columns' | translate }}</mat-label>
+      <input matInput [(ngModel)]="resultConfig.countFieldColumns" type="number" (keydown)="onChange()">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'widgets.protosearch.settings.mapping' | translate }}</mat-label>
+      <mat-select
+          [compareWith]="compareProto"
+          [(ngModel)]="proto"
+          (valueChange)="validate()"
+          (selectionChange)="validate()"
+        name="hep_alias"
+        ngDefaultControl>
+        <mat-option *ngFor="let protoItem of mappingSortedData" [value]="protoItem">
+          {{protoItem.hep_alias}} - {{protoItem.profile}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <div *ngIf="proto">
+      <app-drag-drop-list
+        [sortlistactive]="data.config.fields"
+        [list]="proto.fields_mapping"
+        (change)="onUpdateProto($event)"
+      ></app-drag-drop-list>
+    </div>
+  </div>
+</div>
+<div class="action-buttons-setting">
+  <button mat-raised-button class="clear-btn" (click)="onNoClick()">{{'LINK.buttons.close' | translate}}</button>
+  <button mat-raised-button class="search-btn" color="primary" [mat-dialog-close]="resultConfig" [disabled]="!isValidForm || isInvalid" cdkFocusInitial>{{'LINK.buttons.save' | translate}}</button>
+</div>

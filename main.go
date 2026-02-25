@@ -1918,6 +1918,7 @@ func sendIndexHtml(c echo.Context, path string) error {
 		btnScript := `(function(){` +
 			`var L="` + btnLabel + `";` +
 			`var t=null;` +
+			`function isLoggedIn(){return !!localStorage.getItem("HOMER-currentUser");}` +
 			`function fix(btn){` +
 			`btn.dataset.kcPatched="1";` +
 			`btn.removeAttribute("mat-icon-button");` +
@@ -1929,6 +1930,7 @@ func sendIndexHtml(c echo.Context, path string) error {
 			`if(gp){gp.style.cssText+=";overflow:visible!important";}` +
 			`}` +
 			`function patch(){` +
+			`if(isLoggedIn())return;` +
 			`var fa=document.querySelectorAll("fa-icon");` +
 			`for(var i=0;i<fa.length;i++){` +
 			`var el=fa[i],svg=el.querySelector("svg"),` +

@@ -1,0 +1,42 @@
+<mat-toolbar class="dialog-title" color="primary">
+  <div>{{ 'preference.agentsub.dialog.title' | translate }}</div>
+  <button mat-icon-button (click)="onNoClick()">
+    <fa-icon icon="times"></fa-icon>
+  </button>
+</mat-toolbar>
+<div mat-dialog-content>
+
+  <strong>{{ 'preference.agentsub.dialog.title' | translate }}</strong>
+  <p>{{ 'preference.agentsub.dialog.description' | translate }}</p>
+  <hr />
+  <div>
+    <mat-form-field style="padding-right: 1rem;">
+      <mat-label>HEP Alias</mat-label>
+      <input matInput [(ngModel)]="data.data.hep_alias" autocomplete="off">
+    </mat-form-field>
+    <mat-form-field style="padding-right: 1rem;">
+      <mat-label>HEP ID</mat-label>
+      <input matInput [(ngModel)]="data.data.hepid" autocomplete="off">
+    </mat-form-field>
+    <mat-form-field style="padding-right: 1rem;">
+      <mat-label>Profile</mat-label>
+      <input matInput [(ngModel)]="data.data.profile" autocomplete="off">
+    </mat-form-field>
+
+  </div>
+  <strong>AgentSub Mapping</strong>
+  <p>Defines any cross-protocol correlation mechanism</p>
+  <hr />
+  <full-screen (fullPage)='disableClose($event)' [data]='{json:data.data.data, title: "Agentsub", type: "json"}'>
+    <!-- <ace-editor [mode]="'json'" [theme]="'monokai'" [readOnly]="false" [(text)]="data.data.mapping"
+      (textChanged)="validate()" [durationBeforeCallback]="500" #data_view [style.height.%]="100"></ace-editor> -->
+      <app-codejar-wrapper [mode]="'json'" [theme]="'monokai'" [readOnly]="false" [(text)]="data.data.mapping"
+        (textChange)="validate()" [durationBeforeCallback]="500" #data_view [style.height.%]="100"></app-codejar-wrapper>
+  </full-screen>
+</div>
+
+<div mat-dialog-actions style="float: right; margin-bottom: 0rem;">
+  <button mat-raised-button (click)="onNoClick()">{{'LINK.buttons.cancel' | translate}}</button>
+  <button mat-raised-button class="setting-btn-ok" [mat-dialog-close]="data" cdkFocusInitial
+    [disabled]='isDisabled'>{{'LINK.buttons.save' | translate}}</button>
+</div>

@@ -1,0 +1,26 @@
+.chack-list {
+    margin-right: 1.3rem;
+}
+
+.title {
+    width: initial !important;
+    display: flex;
+    justify-content: space-between;
+}
+
+.example-container {
+    display: flex;
+    flex-direction: column;  
+    & > * {
+        width: 100%;
+    }
+    .example-list .pos-sticky {
+        position: sticky;
+        top: 0;
+    }
+}
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    margin: 15px 0;
+}

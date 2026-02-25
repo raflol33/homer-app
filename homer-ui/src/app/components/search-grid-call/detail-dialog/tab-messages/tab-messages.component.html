@@ -1,0 +1,32 @@
+<!-- style="position: relative; overflow: auto; display: flex; flex-direction: column; height: 100%;" -->
+
+<div class="mat-elevation-z8"
+    style="position: relative; overflow: auto; display: flex; flex-direction: column; height: 100%;">
+    <custom-ag-grid class="example-table-container"
+        [details]="dataSource.filteredData"
+        [columns]="displayedColumns"
+        (rowClick)="onClickMessage($event)"></custom-ag-grid>
+
+    <div class="footer-panel">
+        <mat-form-field style="flex: 1"
+            class="example-form-field">
+            <mat-label>Filter</mat-label>
+            <input matInput
+                type="text"
+                [(ngModel)]="filterTextValue"
+                (keyup)="applyFilter()">
+            <button mat-button
+                *ngIf="filterTextValue"
+                matSuffix
+                mat-icon-button
+                aria-label="Clear"
+                (click)="filterTextValue=''; applyFilter()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </mat-form-field>
+        <mat-paginator style="flex: 0; min-width: 500px; display: none;"
+            [pageSizeOptions]="[25, 50, 100, 200]"
+            showFirstLastButtons>
+        </mat-paginator>
+    </div>
+</div>

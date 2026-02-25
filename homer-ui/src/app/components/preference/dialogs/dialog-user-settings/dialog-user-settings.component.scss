@@ -1,0 +1,25 @@
+.chack-list {
+	margin-right: 1.3rem;
+}
+
+.example-container {
+	display: flex;
+	flex-direction: column;
+	& > * {
+		width: 100%;
+	}
+}
+.hide {
+	display: none !important;
+}
+
+
+::ng-deep .mat-mdc-input-element:disabled {
+    color: black;
+}
+/* TODO(mdc-migration): The following rule targets internal classes of form-field that may no longer apply for the MDC version. */
+/* TODO(mdc-migration): The following rule targets internal classes of form-field that may no longer apply for the MDC version. */
+::ng-deep .mat-form-field-appearance-legacy.mat-form-field-disabled .mat-form-field-underline {
+    background-image: unset;    
+    background-color: rgba(0,0,0,.42);
+}

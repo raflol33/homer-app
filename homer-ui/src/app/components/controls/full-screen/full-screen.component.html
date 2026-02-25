@@ -1,0 +1,52 @@
+
+    <div [style.min-height.px]="350"
+    [style.position]="'relative'"
+    #innerContainer
+    >
+    <div class="content-wrapper"
+        #content>
+        <span class="button-wrapper">
+            <button mat-icon-button
+            class="button-inside"
+            [matTooltip]="isFullPage ? 'Exit fullscreen' : 'Enter fullscreen'"
+            (click)="onFullPage()">
+            <mat-icon> {{isFullPage ? 'fullscreen_exit' : 'fullscreen'}}</mat-icon>
+        </button>
+        <button 
+        class="button-inside" mat-icon-button *ngIf="allowReadOnly" (click)='isReadOnlyChange.emit(!isReadOnly)'>
+            <fa-icon
+                [matTooltip]="isReadOnly ? 'Unlock editor' : 'Lock editor'"
+                [icon]="isReadOnly ? 'lock' : 'lock-open'"
+            ></fa-icon>
+        </button>
+        <mat-expansion-panel hideToggle class="menu-button">
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+            <button mat-icon-button 
+            class="button-inside-menu">
+            
+            <mat-icon>menu</mat-icon>
+            </button>
+            </mat-panel-title>
+        </mat-expansion-panel-header>
+        <button mat-icon-button *ngIf="data.json !== undefined"
+        [matTooltip]="'Export data'"
+        class="button-inside-menu"
+        (click)="download()">
+        
+        <mat-icon>file_download</mat-icon>
+        </button>
+        <form 
+        [matTooltip]="'Import data'" class="button-inside-menu upload">
+            <div class="file-upload-container">
+            <label for="fileSelect" class="fileselect"><mat-icon>file_upload</mat-icon></label>
+            <input placeholder="" value="" type="file" id="fileSelect" #fileSelect></div>
+        </form>
+        </mat-expansion-panel>
+        </span>
+        
+        <ng-content></ng-content>
+        
+    </div>
+    
+</div>
